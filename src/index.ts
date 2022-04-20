@@ -141,7 +141,7 @@ const exitGracefully = async (
       pulsarClient = createPulsarClient(config.pulsar);
       logger.info("Create Pulsar producer");
       pulsarProducer = await createPulsarProducer(pulsarClient, config.pulsar);
-      logger.info("Create Pulsar producer");
+      logger.info("Create Pulsar consumer");
       pulsarConsumer = await createPulsarConsumer(pulsarClient, config.pulsar);
       logger.info("Set health check status to OK");
       setHealthOk(true);
