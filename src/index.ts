@@ -1,14 +1,14 @@
 import pino from "pino";
 import type Pulsar from "pulsar-client";
-import { getConfig } from "./config.js";
-import keepDeduplicating from "./deduplication.js";
-import createHealthCheckServer from "./healthCheck.js";
+import { getConfig } from "./config";
+import keepDeduplicating from "./deduplication";
+import createHealthCheckServer from "./healthCheck";
 import {
   createPulsarClient,
   createPulsarProducer,
   createPulsarConsumer,
-} from "./pulsar.js";
-import transformUnknownToError from "./util.js";
+} from "./pulsar";
+import transformUnknownToError from "./util";
 
 /**
  * Exit gracefully.

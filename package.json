@@ -2,8 +2,7 @@
   "name": "pulsar-topic-deduplicator",
   "version": "0.0.1",
   "description": "Receive messages from an Apache Pulsar topic and send the first of each unique message into another topic, in order",
-  "type": "module",
-  "exports": "dist/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "rm -rf dist && tsc",
     "check-and-build": "npm run ts:check && npm run prettier:check && npm run eslint && npm run test && npm run build",
@@ -39,7 +38,6 @@
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-airbnb-typescript": "^17.0.0",
     "eslint-config-prettier": "^8.3.0",
-    "eslint-import-resolver-typescript": "^2.7.1",
     "eslint-plugin-eslint-comments": "^3.2.0",
     "eslint-plugin-import": "^2.25.4",
     "eslint-plugin-jest": "^26.1.0",
