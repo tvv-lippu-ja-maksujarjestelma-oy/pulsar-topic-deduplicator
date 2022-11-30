@@ -1,7 +1,7 @@
 {
   "name": "pulsar-topic-deduplicator",
   "version": "0.0.1",
-  "description": "Poll an HTTP endpoint and push the data into Apache Pulsar",
+  "description": "Receive messages from an Apache Pulsar topic and send the first of each unique message into another topic, in order",
   "type": "module",
   "exports": "dist/index.js",
   "scripts": {
