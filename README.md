@@ -39,8 +39,8 @@ It is used to remove duplicated messages that were created by e.g. multiple repl
 
 ## Docker
 
-You can use the Docker image `ghcr.io/tvv-lippu-ja-maksujarjestelma-oy/pulsar-topic-deduplicator:edge`.
-Check out [the available tags](https://github.com/tvv-lippu-ja-maksujarjestelma-oy/pulsar-topic-deduplicator/pkgs/container/pulsar-topic-deduplicator).
+You can use the Docker image `tvvlmj/pulsar-topic-deduplicator:edge`.
+Check out [the available tags](https://hub.docker.com/r/tvvlmj/pulsar-topic-deduplicator/tags).
 
 ## Configuration
 
