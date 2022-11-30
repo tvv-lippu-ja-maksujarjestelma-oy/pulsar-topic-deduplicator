@@ -19,9 +19,9 @@ const exitGracefully = async (
   exitError?: Error,
   setHealthOk?: (isOk: boolean) => void,
   closeHealthCheckServer?: () => Promise<void>,
-  pulsarClient?: Pulsar.Client,
-  pulsarProducer?: Pulsar.Producer,
-  pulsarConsumer?: Pulsar.Consumer
+  client?: Pulsar.Client,
+  producer?: Pulsar.Producer,
+  consumer?: Pulsar.Consumer
 ) => {
   if (exitError) {
     logger.fatal(exitError);
@@ -40,33 +40,33 @@ const exitGracefully = async (
     );
   }
   try {
-    if (pulsarConsumer) {
+    if (consumer) {
       logger.info("Close Pulsar consumer");
-      await pulsarConsumer.close();
+      await consumer.close();
     }
   } catch (err) {
     logger.error({ err }, "Something went wrong when closing Pulsar consumer");
   }
   try {
-    if (pulsarProducer) {
+    if (producer) {
       logger.info("Flush Pulsar producer");
-      await pulsarProducer.flush();
+      await producer.flush();
     }
   } catch (err) {
     logger.error({ err }, "Something went wrong when flushing Pulsar producer");
   }
   try {
-    if (pulsarProducer) {
+    if (producer) {
       logger.info("Close Pulsar producer");
-      await pulsarProducer.close();
+      await producer.close();
     }
   } catch (err) {
     logger.error({ err }, "Something went wrong when closing Pulsar producer");
   }
   try {
-    if (pulsarClient) {
+    if (client) {
       logger.info("Close Pulsar client");
-      await pulsarClient.close();
+      await client.close();
     }
   } catch (err) {
     logger.error({ err }, "Something went wrong when closing Pulsar client");
@@ -100,9 +100,9 @@ const exitGracefully = async (
 
     let setHealthOk: (isOk: boolean) => void;
     let closeHealthCheckServer: () => Promise<void>;
-    let pulsarClient: Pulsar.Client;
-    let pulsarProducer: Pulsar.Producer;
-    let pulsarConsumer: Pulsar.Consumer;
+    let client: Pulsar.Client;
+    let producer: Pulsar.Producer;
+    let consumer: Pulsar.Consumer;
 
     const exitHandler = (exitCode: number, exitError?: Error) => {
       // Exit next.
@@ -113,9 +113,9 @@ const exitGracefully = async (
         exitError,
         setHealthOk,
         closeHealthCheckServer,
-        pulsarClient,
-        pulsarProducer,
-        pulsarConsumer
+        client,
+        producer,
+        consumer
       );
       /* eslint-enable @typescript-eslint/no-floating-promises */
     };
@@ -138,19 +138,15 @@ const exitGracefully = async (
         config.healthCheck
       ));
       logger.info("Create Pulsar client");
-      pulsarClient = createPulsarClient(config.pulsar);
+      client = createPulsarClient(config.pulsar);
       logger.info("Create Pulsar producer");
-      pulsarProducer = await createPulsarProducer(pulsarClient, config.pulsar);
+      producer = await createPulsarProducer(client, config.pulsar);
       logger.info("Create Pulsar consumer");
-      pulsarConsumer = await createPulsarConsumer(pulsarClient, config.pulsar);
+      consumer = await createPulsarConsumer(client, config.pulsar);
       logger.info("Set health check status to OK");
       setHealthOk(true);
       logger.info("Keep receiving, deduplicating and sending messages");
-      await keepDeduplicating(
-        pulsarProducer,
-        pulsarConsumer,
-        config.deduplication
-      );
+      await keepDeduplicating(producer, consumer, config.deduplication);
     } catch (err) {
       exitHandler(1, transformUnknownToError(err));
     }

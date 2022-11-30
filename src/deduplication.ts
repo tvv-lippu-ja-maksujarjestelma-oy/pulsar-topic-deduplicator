@@ -29,21 +29,21 @@ const createHasher = async (
 };
 
 const keepDeduplicating = async (
-  pulsarProducer: Pulsar.Producer,
-  pulsarConsumer: Pulsar.Consumer,
+  producer: Pulsar.Producer,
+  consumer: Pulsar.Consumer,
   { deduplicationWindowInSeconds, ignoredProperties }: DeduplicationConfig
 ) => {
   const calculateHash = await createHasher(ignoredProperties);
   const cache = new ObliviousSet(deduplicationWindowInSeconds * 1e3);
   /* eslint-disable no-await-in-loop */
   for (;;) {
-    const message = await pulsarConsumer.receive();
+    const message = await consumer.receive();
     const hash = calculateHash(message);
     if (!cache.has(hash)) {
       cache.add(hash);
       // In case of an error, exit via the listener on unhandledRejection.
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      pulsarProducer
+      producer
         .send({
           data: message.getData(),
           properties: message.getProperties(),
@@ -52,7 +52,7 @@ const keepDeduplicating = async (
         .then(() => {
           // In case of an error, exit via the listener on unhandledRejection.
           // eslint-disable-next-line @typescript-eslint/no-floating-promises
-          pulsarConsumer.acknowledge(message).then(() => {});
+          consumer.acknowledge(message).then(() => {});
         });
     }
   }
