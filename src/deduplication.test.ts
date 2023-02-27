@@ -173,3 +173,16 @@ test("Produce differing hashes for two messages with differing data, identical p
   });
   expectDifferingHashes(calculateHash, message1, message2);
 });
+
+test("Produce identical hashes for identical input with two separate hasher instances", async () => {
+  const calculateHash1 = await createHasher([]);
+  const calculateHash2 = await createHasher([]);
+  const message = mockPulsarMessage({
+    properties: properties1,
+    data: messageData1,
+    eventTimestamp: eventTimestamp1,
+  });
+  const hash1 = calculateHash1(message);
+  const hash2 = calculateHash2(message);
+  expect(hash1).toStrictEqual(hash2);
+});
