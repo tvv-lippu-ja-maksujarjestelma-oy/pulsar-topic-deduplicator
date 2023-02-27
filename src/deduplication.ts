@@ -4,12 +4,21 @@ import type Pulsar from "pulsar-client";
 import stringify from "safe-stable-stringify";
 import type { DeduplicationConfig } from "./config";
 
+/**
+ * The maximum length for Blake2b is 64 bytes. It is also the length portrayed
+ * in the example at
+ * https://libsodium.gitbook.io/doc/hashing/generic_hashing .
+ *
+ * The size should affect the memory usage of this service linearly. The effect
+ * on CPU usage might be negligible.
+ */
+const HASH_LENGTH_IN_BYTES = 64;
+
 export const createHasher = async (
   ignoredProperties: string[]
 ): Promise<(message: Pulsar.Message) => Uint8Array> => {
   await _sodium.ready;
   const sodium = _sodium;
-  const hashKey = sodium.randombytes_buf(sodium.crypto_shorthash_KEYBYTES);
   const ignored = new Set(ignoredProperties);
   const calculateHash = (message: Pulsar.Message): Uint8Array => {
     const properties = message.getProperties();
@@ -23,7 +32,7 @@ export const createHasher = async (
       message.getData(),
       deterministicPropertyBuffer,
     ]);
-    return sodium.crypto_shorthash(toHash, hashKey);
+    return sodium.crypto_generichash(HASH_LENGTH_IN_BYTES, toHash);
   };
   return calculateHash;
 };
