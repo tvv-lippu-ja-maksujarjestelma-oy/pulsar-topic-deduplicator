@@ -4,7 +4,7 @@ import type Pulsar from "pulsar-client";
 import stringify from "safe-stable-stringify";
 import type { DeduplicationConfig } from "./config";
 
-const createHasher = async (
+export const createHasher = async (
   ignoredProperties: string[]
 ): Promise<(message: Pulsar.Message) => Uint8Array> => {
   await _sodium.ready;
@@ -28,7 +28,7 @@ const createHasher = async (
   return calculateHash;
 };
 
-const keepDeduplicating = async (
+export const keepDeduplicating = async (
   producer: Pulsar.Producer,
   consumer: Pulsar.Consumer,
   { deduplicationWindowInSeconds, ignoredProperties }: DeduplicationConfig
@@ -58,5 +58,3 @@ const keepDeduplicating = async (
   }
   /* eslint-enable no-await-in-loop */
 };
-
-export default keepDeduplicating;
