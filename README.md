@@ -7,7 +7,6 @@ It is used to remove duplicated messages that were created by e.g. multiple repl
 
 ## Development
 
-1. Install [the build dependencies for the Apache Pulsar C++ client](https://pulsar.apache.org/docs/en/client-libraries-cpp/#system-requirements).
 1. Create a suitable `.env` file for configuration.
    Check below for the configuration reference.
 1. Create any necessary secrets that the `.env` file points to.

@@ -1,7 +1,7 @@
 import pino from "pino";
 import type Pulsar from "pulsar-client";
 import { getConfig } from "./config";
-import keepDeduplicating from "./deduplication";
+import { keepDeduplicating } from "./deduplication";
 import createHealthCheckServer from "./healthCheck";
 import {
   createPulsarClient,
