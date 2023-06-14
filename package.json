@@ -50,7 +50,7 @@
   "dependencies": {
     "libsodium-wrappers": "^0.7.11",
     "oblivious-set": "^1.1.1",
-    "pino": "^7.6.5",
+    "pino": "^8.14.1",
     "pulsar-client": "^1.8.2",
     "safe-stable-stringify": "^2.4.3"
   },
