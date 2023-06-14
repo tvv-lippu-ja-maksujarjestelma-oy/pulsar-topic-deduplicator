@@ -94,10 +94,16 @@ const exitGracefully = async (
   const serviceName = "pulsar-topic-deduplicator";
   /* eslint-enable @typescript-eslint/no-floating-promises */
   try {
-    const logger = pino({
-      name: serviceName,
-      timestamp: pino.stdTimeFunctions.isoTime,
-    });
+    const logger = pino(
+      {
+        name: serviceName,
+        timestamp: pino.stdTimeFunctions.isoTime,
+        // As logger is started before config is created, read the level from
+        // env.
+        level: process.env["PINO_LOG_LEVEL"] ?? "info",
+      },
+      pino.destination({ sync: true })
+    );
 
     let setHealthOk: (isOk: boolean) => void;
     let closeHealthCheckServer: () => Promise<void>;
