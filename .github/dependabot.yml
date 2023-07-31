@@ -15,9 +15,6 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      typescript-eslint:
-        patterns:
-          - "@typescript-eslint/*"
       jest:
         patterns:
           - "@types/jest"
@@ -28,3 +25,11 @@ updates:
         patterns:
           - "@types/libsodium-wrappers"
           - "libsodium-wrappers"
+      prettier:
+        patterns:
+          - "eslint-config-prettier"
+          - "eslint-plugin-prettier"
+          - "prettier"
+      typescript-eslint:
+        patterns:
+          - "@typescript-eslint/*"
