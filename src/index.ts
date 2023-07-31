@@ -91,8 +91,8 @@ const exitGracefully = async (
  */
 /* eslint-disable @typescript-eslint/no-floating-promises */
 (async () => {
-  const serviceName = "pulsar-topic-deduplicator";
   /* eslint-enable @typescript-eslint/no-floating-promises */
+  const serviceName = "pulsar-topic-deduplicator";
   try {
     const logger = pino(
       {
