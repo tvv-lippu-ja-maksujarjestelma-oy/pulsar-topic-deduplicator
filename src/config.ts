@@ -46,7 +46,7 @@ const getOptional = (envVariable: string) => process.env[envVariable];
 
 const getOptionalBooleanWithDefault = (
   envVariable: string,
-  defaultValue: boolean
+  defaultValue: boolean,
 ) => {
   let result = defaultValue;
   const str = getOptional(envVariable);
@@ -68,7 +68,7 @@ const getDeduplicationIgnoredProperties = (): string[] => {
   const envVariable = "DEDUPLICATION_IGNORED_PROPERTIES";
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   const ignoredProperties: string[] = JSON.parse(
-    getOptional(envVariable) ?? "[]"
+    getOptional(envVariable) ?? "[]",
   );
   if (
     !(
@@ -77,7 +77,7 @@ const getDeduplicationIgnoredProperties = (): string[] => {
     )
   ) {
     throw new Error(
-      `${envVariable} must be a stringified JSON array holding only strings.`
+      `${envVariable} must be a stringified JSON array holding only strings.`,
     );
   }
   return ignoredProperties;
@@ -107,7 +107,7 @@ const createPulsarLog =
     level: Pulsar.LogLevel,
     file: string,
     line: number,
-    message: string
+    message: string,
   ): void => {
     switch (level) {
       case Pulsar.LogLevel.DEBUG:
@@ -141,7 +141,7 @@ const getPulsarCompressionType = (): Pulsar.CompressionType => {
   ) {
     throw new Error(
       "If defined, PULSAR_COMPRESSION_TYPE must be one of 'Zlib', 'LZ4', " +
-        "'ZSTD' or 'SNAPPY'. Default is 'ZSTD'."
+        "'ZSTD' or 'SNAPPY'. Default is 'ZSTD'.",
     );
   }
   return compressionType;
@@ -152,13 +152,13 @@ const getPulsarConfig = (logger: pino.Logger): PulsarConfig => {
   const serviceUrl = getRequired("PULSAR_SERVICE_URL");
   const tlsValidateHostname = getOptionalBooleanWithDefault(
     "PULSAR_TLS_VALIDATE_HOSTNAME",
-    true
+    true,
   );
   const log = createPulsarLog(logger);
   const producerTopic = getRequired("PULSAR_PRODUCER_TOPIC");
   const blockIfQueueFull = getOptionalBooleanWithDefault(
     "PULSAR_BLOCK_IF_QUEUE_FULL",
-    true
+    true,
   );
   const compressionType = getPulsarCompressionType();
   const consumerTopicsPattern = getRequired("PULSAR_CONSUMER_TOPICS_PATTERN");

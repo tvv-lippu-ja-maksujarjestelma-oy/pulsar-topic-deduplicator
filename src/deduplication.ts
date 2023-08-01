@@ -15,7 +15,7 @@ import type { DeduplicationConfig } from "./config";
 const HASH_LENGTH_IN_BYTES = 64;
 
 export const createHasher = async (
-  ignoredProperties: string[]
+  ignoredProperties: string[],
 ): Promise<(message: Pulsar.Message) => Uint8Array> => {
   await _sodium.ready;
   const sodium = _sodium;
@@ -23,7 +23,7 @@ export const createHasher = async (
   const calculateHash = (message: Pulsar.Message): Uint8Array => {
     const properties = message.getProperties();
     const keptProperties = Object.fromEntries(
-      Object.entries(properties).filter(([key]) => !ignored.has(key))
+      Object.entries(properties).filter(([key]) => !ignored.has(key)),
     );
     const deterministicPropertyBuffer = Buffer.from(stringify(keptProperties));
     // Ignore the event timestamp of the message as it is likely different for
@@ -40,7 +40,7 @@ export const createHasher = async (
 export const keepDeduplicating = async (
   producer: Pulsar.Producer,
   consumer: Pulsar.Consumer,
-  { deduplicationWindowInSeconds, ignoredProperties }: DeduplicationConfig
+  { deduplicationWindowInSeconds, ignoredProperties }: DeduplicationConfig,
 ) => {
   const calculateHash = await createHasher(ignoredProperties);
   const cache = new ObliviousSet(deduplicationWindowInSeconds * 1e3);

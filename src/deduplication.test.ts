@@ -30,7 +30,7 @@ const mockPulsarMessage = ({
 const expectEqualHashes = (
   calculateHash: (message: Pulsar.Message) => Uint8Array,
   message1: Pulsar.Message,
-  message2: Pulsar.Message
+  message2: Pulsar.Message,
 ): void => {
   const hash1 = calculateHash(message1);
   const hash2 = calculateHash(message2);
@@ -40,7 +40,7 @@ const expectEqualHashes = (
 const expectDifferingHashes = (
   calculateHash: (message: Pulsar.Message) => Uint8Array,
   message1: Pulsar.Message,
-  message2: Pulsar.Message
+  message2: Pulsar.Message,
 ): void => {
   const hash1 = calculateHash(message1);
   const hash2 = calculateHash(message2);

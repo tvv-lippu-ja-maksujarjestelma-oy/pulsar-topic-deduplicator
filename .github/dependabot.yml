@@ -14,3 +14,22 @@ updates:
     open-pull-requests-limit: 20
     schedule:
       interval: "weekly"
+    groups:
+      jest:
+        patterns:
+          - "@types/jest"
+          - "eslint-plugin-jest"
+          - "jest"
+          - "ts-jest"
+      libsodium-wrappers:
+        patterns:
+          - "@types/libsodium-wrappers"
+          - "libsodium-wrappers"
+      prettier:
+        patterns:
+          - "eslint-config-prettier"
+          - "eslint-plugin-prettier"
+          - "prettier"
+      typescript-eslint:
+        patterns:
+          - "@typescript-eslint/*"

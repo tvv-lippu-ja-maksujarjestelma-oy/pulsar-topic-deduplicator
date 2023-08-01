@@ -21,7 +21,7 @@ const exitGracefully = async (
   closeHealthCheckServer?: () => Promise<void>,
   client?: Pulsar.Client,
   producer?: Pulsar.Producer,
-  consumer?: Pulsar.Consumer
+  consumer?: Pulsar.Consumer,
 ) => {
   if (exitError) {
     logger.fatal(exitError);
@@ -36,7 +36,7 @@ const exitGracefully = async (
   } catch (err) {
     logger.error(
       { err },
-      "Something went wrong when setting health checks to fail"
+      "Something went wrong when setting health checks to fail",
     );
   }
   try {
@@ -79,7 +79,7 @@ const exitGracefully = async (
   } catch (err) {
     logger.error(
       { err },
-      "Something went wrong when closing health check server"
+      "Something went wrong when closing health check server",
     );
   }
   logger.info("Exit process");
@@ -91,8 +91,8 @@ const exitGracefully = async (
  */
 /* eslint-disable @typescript-eslint/no-floating-promises */
 (async () => {
-  const serviceName = "pulsar-topic-deduplicator";
   /* eslint-enable @typescript-eslint/no-floating-promises */
+  const serviceName = "pulsar-topic-deduplicator";
   try {
     const logger = pino(
       {
@@ -102,7 +102,7 @@ const exitGracefully = async (
         // env.
         level: process.env["PINO_LOG_LEVEL"] ?? "info",
       },
-      pino.destination({ sync: true })
+      pino.destination({ sync: true }),
     );
 
     let setHealthOk: (isOk: boolean) => void;
@@ -122,7 +122,7 @@ const exitGracefully = async (
         closeHealthCheckServer,
         client,
         producer,
-        consumer
+        consumer,
       );
       /* eslint-enable @typescript-eslint/no-floating-promises */
     };
@@ -131,7 +131,7 @@ const exitGracefully = async (
       // Handle different kinds of exits.
       process.on("beforeExit", () => exitHandler(1, new Error("beforeExit")));
       process.on("unhandledRejection", (reason) =>
-        exitHandler(1, transformUnknownToError(reason))
+        exitHandler(1, transformUnknownToError(reason)),
       );
       process.on("uncaughtException", (err) => exitHandler(1, err));
       process.on("SIGINT", (signal) => exitHandler(130, new Error(signal)));
@@ -143,7 +143,7 @@ const exitGracefully = async (
       const config = getConfig(logger);
       logger.info("Create health check server");
       ({ closeHealthCheckServer, setHealthOk } = createHealthCheckServer(
-        config.healthCheck
+        config.healthCheck,
       ));
       logger.info("Create Pulsar client");
       client = createPulsarClient(config.pulsar);
