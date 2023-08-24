@@ -1,38 +1,36 @@
-import _sodium from "libsodium-wrappers";
+import crypto from "node:crypto";
 import { ObliviousSet } from "oblivious-set";
 import type Pulsar from "pulsar-client";
 import stringify from "safe-stable-stringify";
 import type { DeduplicationConfig } from "./config";
 
-/**
- * The maximum length for Blake2b is 64 bytes. It is also the length portrayed
- * in the example at
- * https://libsodium.gitbook.io/doc/hashing/generic_hashing .
- *
- * The size should affect the memory usage of this service linearly. The effect
- * on CPU usage might be negligible.
- */
-const HASH_LENGTH_IN_BYTES = 64;
-
-export const createHasher = async (
+export const createHasher = (
   ignoredProperties: string[],
-): Promise<(message: Pulsar.Message) => Uint8Array> => {
-  await _sodium.ready;
-  const sodium = _sodium;
+): ((message: Pulsar.Message) => Buffer) => {
   const ignored = new Set(ignoredProperties);
-  const calculateHash = (message: Pulsar.Message): Uint8Array => {
+  const calculateHash = (message: Pulsar.Message): Buffer => {
     const properties = message.getProperties();
     const keptProperties = Object.fromEntries(
       Object.entries(properties).filter(([key]) => !ignored.has(key)),
     );
-    const deterministicPropertyBuffer = Buffer.from(stringify(keptProperties));
+    const deterministicPropertyBuffer = Buffer.from(
+      stringify(keptProperties),
+      "utf8",
+    );
     // Ignore the event timestamp of the message as it is likely different for
     // each data source replica.
     const toHash = Buffer.concat([
       message.getData(),
       deterministicPropertyBuffer,
     ]);
-    return sodium.crypto_generichash(HASH_LENGTH_IN_BYTES, toHash);
+    /**
+     * Blake2b of 64 bytes is probably overkill. We do not need a
+     * cryptographically strong hash function to filter out duplicates, just a
+     * collision-resistant one. For example the 128-bit xxHash would probably
+     * do the trick. Yet finding a dependency to rely on long-term with minimal
+     * maintenance is not as trivial as just using Node.js and OpenSSL.
+     */
+    return crypto.createHash("BLAKE2b512").update(toHash).digest();
   };
   return calculateHash;
 };
@@ -42,7 +40,7 @@ export const keepDeduplicating = async (
   consumer: Pulsar.Consumer,
   { deduplicationWindowInSeconds, ignoredProperties }: DeduplicationConfig,
 ) => {
-  const calculateHash = await createHasher(ignoredProperties);
+  const calculateHash = createHasher(ignoredProperties);
   const cache = new ObliviousSet(deduplicationWindowInSeconds * 1e3);
   /* eslint-disable no-await-in-loop */
   for (;;) {
