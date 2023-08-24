@@ -67,7 +67,10 @@ export const keepDeduplicating = async (
       producer
         .send({
           data: message.getData(),
-          properties: message.getProperties(),
+          properties: {
+            ...message.getProperties(),
+            ...{ digest },
+          },
           eventTimestamp: message.getEventTimestamp(),
         })
         .then(() => {
