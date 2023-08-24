@@ -155,7 +155,7 @@ const exitGracefully = async (
       logger.info("Set health check status to OK");
       setHealthOk(true);
       logger.info("Keep receiving, deduplicating and sending messages");
-      await keepDeduplicating(producer, consumer, config.deduplication);
+      await keepDeduplicating(logger, producer, consumer, config.deduplication);
     } catch (err) {
       exitHandler(1, transformUnknownToError(err));
     }

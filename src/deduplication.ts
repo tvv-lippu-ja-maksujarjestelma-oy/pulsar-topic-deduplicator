@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { ObliviousSet } from "oblivious-set";
+import pino from "pino";
 import type Pulsar from "pulsar-client";
 import stringify from "safe-stable-stringify";
 import type { DeduplicationConfig } from "./config";
@@ -36,6 +37,7 @@ export const createHasher = (
 };
 
 export const keepDeduplicating = async (
+  logger: pino.Logger,
   producer: Pulsar.Producer,
   consumer: Pulsar.Consumer,
   { deduplicationWindowInSeconds, ignoredProperties }: DeduplicationConfig,
@@ -47,6 +49,18 @@ export const keepDeduplicating = async (
     const message = await consumer.receive();
     const hash = calculateHash(message);
     if (!cache.has(hash)) {
+      const digest = hash.toString("hex");
+      logger.debug(
+        {
+          messageData: message.getData(),
+          messageProperties: message.getProperties(),
+          messageEventTimestamp: message.getEventTimestamp(),
+          messagePublishTimestamp: message.getPublishTimestamp(),
+          digest,
+          cacheSize: cache.map.size,
+        },
+        "Got a new message",
+      );
       cache.add(hash);
       // In case of an error, exit via the listener on unhandledRejection.
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
