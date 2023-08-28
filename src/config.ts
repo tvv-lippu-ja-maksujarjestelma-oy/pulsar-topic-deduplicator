@@ -64,6 +64,18 @@ const getOptionalFloat = (envVariable: string): number | undefined => {
   return string !== undefined ? parseFloat(string) : undefined;
 };
 
+const getOptionalNonNegativeFloat = (
+  envVariable: string,
+): number | undefined => {
+  const float = getOptionalFloat(envVariable);
+  if (float != null && (!Number.isFinite(float) || float < 0)) {
+    throw new Error(
+      `${envVariable} must be a non-negative, finite float if given. Instead, ${float} was given.`,
+    );
+  }
+  return float;
+};
+
 const getDeduplicationIgnoredProperties = (): string[] => {
   const envVariable = "DEDUPLICATION_IGNORED_PROPERTIES";
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -85,7 +97,7 @@ const getDeduplicationIgnoredProperties = (): string[] => {
 
 const getDeduplicationConfig = () => {
   const deduplicationWindowInSeconds =
-    getOptionalFloat("DEDUPLICATION_WINDOW_IN_SECONDS") ?? 3600;
+    getOptionalNonNegativeFloat("DEDUPLICATION_WINDOW_IN_SECONDS") ?? 3600;
   const ignoredProperties = getDeduplicationIgnoredProperties();
   return {
     deduplicationWindowInSeconds,
