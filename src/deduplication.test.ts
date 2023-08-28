@@ -247,15 +247,29 @@ describe("calculateHash", () => {
 });
 
 describe("cache", () => {
-  test("cache can handle Buffers", () => {
-    const generateRandomData = (nBits: number): Uint8Array => {
-      const byteArray = new Uint8Array(nBits);
-      return crypto.getRandomValues(byteArray);
-    };
+  const generateRandomData = (nBits: number): Uint8Array => {
+    const byteArray = new Uint8Array(nBits);
+    return crypto.getRandomValues(byteArray);
+  };
 
+  test("cache compares Buffer identity", () => {
     const cache = new ObliviousSet(100 * 1e3);
     const buffer = Buffer.from(generateRandomData(512));
+    const bufferCopy = Buffer.from(buffer);
     cache.add(buffer);
     expect(cache.has(buffer)).toBeTruthy();
+    expect(cache.has(bufferCopy)).toBeFalsy();
+  });
+
+  test("cache compares string value", () => {
+    const cache = new ObliviousSet(100 * 1e3);
+    const buffer = Buffer.from(generateRandomData(512));
+    const bufferCopy = Buffer.from(buffer);
+    const dataString = buffer.toString("hex");
+    const dataStringCopy = bufferCopy.toString("hex");
+    cache.add(dataString);
+    expect(dataString).toStrictEqual(dataStringCopy);
+    expect(cache.has(dataString)).toBeTruthy();
+    expect(cache.has(dataStringCopy)).toBeTruthy();
   });
 });

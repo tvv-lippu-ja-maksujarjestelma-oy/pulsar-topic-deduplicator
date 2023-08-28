@@ -36,7 +36,7 @@ export const createHasher = (
   return calculateHash;
 };
 
-export const send = async (
+export const sendAndAck = async (
   producer: Pulsar.Producer,
   consumer: Pulsar.Consumer,
   producerMessage: Pulsar.ProducerMessage,
@@ -62,9 +62,10 @@ export const keepDeduplicating = async (
   for (;;) {
     const message = await consumer.receive();
     const hash = calculateHash(message);
-    if (!cache.has(hash)) {
-      cache.add(hash);
-      const digest = hash.toString("hex");
+    const digest = hash.toString("hex");
+    if (!cache.has(digest)) {
+      cache.add(digest);
+      // FIXME: remove after verification
       logger.debug(
         {
           messageData: message.getData(),
@@ -87,12 +88,13 @@ export const keepDeduplicating = async (
         eventTimestamp: message.getEventTimestamp(),
       };
       // To utilize concurrency and to not limit throughput unnecessarily, we
-      // should _not_ await send. Instead, Promises are handled in order by
-      // Node.js. Therefore we can receive the next Pulsar message right away.
+      // should _not_ await sendAndAck. Instead, Promises are handled in order
+      // by Node.js. Therefore we can receive the next Pulsar message right
+      // away.
       //
       // In case of an error, exit via the listener on unhandledRejection.
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      send(producer, consumer, producerMessage, message);
+      sendAndAck(producer, consumer, producerMessage, message);
     }
   }
   /* eslint-enable no-await-in-loop */
