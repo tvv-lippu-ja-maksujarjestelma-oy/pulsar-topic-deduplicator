@@ -36,12 +36,26 @@ export const createHasher = (
   return calculateHash;
 };
 
+export const send = async (
+  producer: Pulsar.Producer,
+  consumer: Pulsar.Consumer,
+  producerMessage: Pulsar.ProducerMessage,
+  consumerMessage: Pulsar.Message,
+) => {
+  await producer.send(producerMessage);
+  await consumer.acknowledge(consumerMessage);
+};
+
 export const keepDeduplicating = async (
   logger: pino.Logger,
   producer: Pulsar.Producer,
   consumer: Pulsar.Consumer,
   { deduplicationWindowInSeconds, ignoredProperties }: DeduplicationConfig,
 ) => {
+  logger.info(
+    { deduplicationWindowInSeconds, ignoredProperties },
+    "Some relevant configuration values",
+  );
   const calculateHash = createHasher(ignoredProperties);
   const cache = new ObliviousSet(deduplicationWindowInSeconds * 1e3);
   /* eslint-disable no-await-in-loop */
@@ -49,11 +63,14 @@ export const keepDeduplicating = async (
     const message = await consumer.receive();
     const hash = calculateHash(message);
     if (!cache.has(hash)) {
+      cache.add(hash);
       const digest = hash.toString("hex");
       logger.debug(
         {
           messageData: message.getData(),
-          messageProperties: message.getProperties(),
+          messageProperties: Object.fromEntries(
+            Object.entries(message.getProperties()),
+          ),
           messageEventTimestamp: message.getEventTimestamp(),
           messagePublishTimestamp: message.getPublishTimestamp(),
           digest,
@@ -61,23 +78,21 @@ export const keepDeduplicating = async (
         },
         "Got a new message",
       );
-      cache.add(hash);
+      const producerMessage = {
+        data: message.getData(),
+        properties: {
+          ...message.getProperties(),
+          ...{ origin: JSON.stringify([digest]) },
+        },
+        eventTimestamp: message.getEventTimestamp(),
+      };
+      // To utilize concurrency and to not limit throughput unnecessarily, we
+      // should _not_ await send. Instead, Promises are handled in order by
+      // Node.js. Therefore we can receive the next Pulsar message right away.
+      //
       // In case of an error, exit via the listener on unhandledRejection.
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      producer
-        .send({
-          data: message.getData(),
-          properties: {
-            ...message.getProperties(),
-            ...{ digest },
-          },
-          eventTimestamp: message.getEventTimestamp(),
-        })
-        .then(() => {
-          // In case of an error, exit via the listener on unhandledRejection.
-          // eslint-disable-next-line @typescript-eslint/no-floating-promises
-          consumer.acknowledge(message).then(() => {});
-        });
+      send(producer, consumer, producerMessage, message);
     }
   }
   /* eslint-enable no-await-in-loop */
