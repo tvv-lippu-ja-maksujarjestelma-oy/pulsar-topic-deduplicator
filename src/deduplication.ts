@@ -65,20 +65,6 @@ export const keepDeduplicating = async (
     const digest = hash.toString("hex");
     if (!cache.has(digest)) {
       cache.add(digest);
-      // FIXME: remove after verification
-      logger.debug(
-        {
-          messageData: message.getData(),
-          messageProperties: Object.fromEntries(
-            Object.entries(message.getProperties()),
-          ),
-          messageEventTimestamp: message.getEventTimestamp(),
-          messagePublishTimestamp: message.getPublishTimestamp(),
-          digest,
-          cacheSize: cache.map.size,
-        },
-        "Got a new message",
-      );
       const producerMessage = {
         data: message.getData(),
         properties: {
