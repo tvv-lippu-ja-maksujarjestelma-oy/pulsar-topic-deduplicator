@@ -7,6 +7,7 @@ import {
   createPulsarClient,
   createPulsarProducer,
   createPulsarConsumer,
+  createPulsarCacheReader,
 } from "./pulsar";
 import transformUnknownToError from "./util";
 
@@ -21,6 +22,7 @@ const exitGracefully = async (
   closeHealthCheckServer?: () => Promise<void>,
   client?: Pulsar.Client,
   producer?: Pulsar.Producer,
+  cacheReader?: Pulsar.Reader,
   consumer?: Pulsar.Consumer,
 ) => {
   if (exitError) {
@@ -46,6 +48,17 @@ const exitGracefully = async (
     }
   } catch (err) {
     logger.error({ err }, "Something went wrong when closing Pulsar consumer");
+  }
+  try {
+    if (cacheReader) {
+      logger.info("Close Pulsar cache reader");
+      await cacheReader.close();
+    }
+  } catch (err) {
+    logger.error(
+      { err },
+      "Something went wrong when closing Pulsar cache reader",
+    );
   }
   try {
     if (producer) {
@@ -110,6 +123,7 @@ const exitGracefully = async (
     let closeHealthCheckServer: () => Promise<void>;
     let client: Pulsar.Client;
     let producer: Pulsar.Producer;
+    let cacheReader: Pulsar.Reader;
     let consumer: Pulsar.Consumer;
 
     const exitHandler = (exitCode: number, exitError?: Error) => {
@@ -123,6 +137,7 @@ const exitGracefully = async (
         closeHealthCheckServer,
         client,
         producer,
+        cacheReader,
         consumer,
       );
       /* eslint-enable @typescript-eslint/no-floating-promises */
@@ -150,12 +165,21 @@ const exitGracefully = async (
       client = createPulsarClient(config.pulsar);
       logger.info("Create Pulsar producer");
       producer = await createPulsarProducer(client, config.pulsar);
+      logger.info("Create Pulsar cache-filling reader");
+      cacheReader = await createPulsarCacheReader(client, config.pulsar);
       logger.info("Create Pulsar consumer");
       consumer = await createPulsarConsumer(client, config.pulsar);
       logger.info("Set health check status to OK");
       setHealthOk(true);
       logger.info("Keep receiving, deduplicating and sending messages");
-      await keepDeduplicating(logger, producer, consumer, config.deduplication);
+      await keepDeduplicating(
+        logger,
+        producer,
+        cacheReader,
+        consumer,
+        config.cacheRebuild,
+        config.deduplication,
+      );
     } catch (err) {
       exitHandler(1, transformUnknownToError(err));
     }
