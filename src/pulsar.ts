@@ -30,3 +30,12 @@ export const createPulsarConsumer = async (
   // eslint-disable-next-line @typescript-eslint/return-await
   return await client.subscribe(consumerConfig);
 };
+
+export const createPulsarCacheReader = async (
+  client: Pulsar.Client,
+  { cacheReaderConfig }: PulsarConfig,
+) => {
+  // There is a try-catch where this function is called.
+  // eslint-disable-next-line @typescript-eslint/return-await
+  return await client.createReader(cacheReaderConfig);
+};

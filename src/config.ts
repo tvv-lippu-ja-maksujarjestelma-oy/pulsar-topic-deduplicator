@@ -1,5 +1,9 @@
 import type pino from "pino";
-import Pulsar from "pulsar-client";
+import Pulsar, { MessageId } from "pulsar-client";
+
+export interface CacheRebuildConfig {
+  cacheWindowInSeconds: number;
+}
 
 export interface DeduplicationConfig {
   deduplicationWindowInSeconds: number;
@@ -21,6 +25,7 @@ export interface PulsarConfig {
   oauth2Config: PulsarOauth2Config;
   clientConfig: Pulsar.ClientConfig;
   producerConfig: Pulsar.ProducerConfig;
+  cacheReaderConfig: Pulsar.ReaderConfig;
   consumerConfig: Pulsar.ConsumerConfig;
 }
 
@@ -29,6 +34,7 @@ export interface HealthCheckConfig {
 }
 
 export interface Config {
+  cacheRebuild: CacheRebuildConfig;
   deduplication: DeduplicationConfig;
   pulsar: PulsarConfig;
   healthCheck: HealthCheckConfig;
@@ -74,6 +80,14 @@ const getOptionalNonNegativeFloat = (
     );
   }
   return float;
+};
+
+const getCacheRebuildConfig = () => {
+  const cacheWindowInSeconds =
+    getOptionalNonNegativeFloat("CACHE_WINDOW_IN_SECONDS") ?? 172800;
+  return {
+    cacheWindowInSeconds,
+  };
 };
 
 const getDeduplicationIgnoredProperties = (): string[] => {
@@ -173,6 +187,9 @@ const getPulsarConfig = (logger: pino.Logger): PulsarConfig => {
     true,
   );
   const compressionType = getPulsarCompressionType();
+  const cacheReaderName = getRequired("PULSAR_CACHE_READER_NAME");
+  // seek() will be called to find the right position.
+  const cacheReaderStartMessageId = MessageId.earliest();
   const consumerTopicsPattern = getRequired("PULSAR_CONSUMER_TOPICS_PATTERN");
   const subscription = getRequired("PULSAR_SUBSCRIPTION");
   const subscriptionType = "Exclusive";
@@ -189,6 +206,11 @@ const getPulsarConfig = (logger: pino.Logger): PulsarConfig => {
       blockIfQueueFull,
       compressionType,
     },
+    cacheReaderConfig: {
+      topic: producerTopic,
+      readerName: cacheReaderName,
+      startMessageId: cacheReaderStartMessageId,
+    },
     consumerConfig: {
       topicsPattern: consumerTopicsPattern,
       subscription,
@@ -204,6 +226,7 @@ const getHealthCheckConfig = () => {
 };
 
 export const getConfig = (logger: pino.Logger): Config => ({
+  cacheRebuild: getCacheRebuildConfig(),
   deduplication: getDeduplicationConfig(),
   pulsar: getPulsarConfig(logger),
   healthCheck: getHealthCheckConfig(),

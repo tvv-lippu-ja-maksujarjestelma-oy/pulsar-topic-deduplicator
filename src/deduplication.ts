@@ -3,7 +3,8 @@ import { ObliviousSet } from "oblivious-set";
 import pino from "pino";
 import type Pulsar from "pulsar-client";
 import stringify from "safe-stable-stringify";
-import type { DeduplicationConfig } from "./config";
+import type { CacheRebuildConfig, DeduplicationConfig } from "./config";
+import { buildUpCache } from "./cacheBuilding";
 
 export const createHasher = (
   ignoredProperties: string[],
@@ -49,7 +50,9 @@ export const sendAndAck = async (
 export const keepDeduplicating = async (
   logger: pino.Logger,
   producer: Pulsar.Producer,
+  cacheReader: Pulsar.Reader,
   consumer: Pulsar.Consumer,
+  cacheRebuildConfig: CacheRebuildConfig,
   { deduplicationWindowInSeconds, ignoredProperties }: DeduplicationConfig,
 ) => {
   logger.info(
@@ -58,6 +61,9 @@ export const keepDeduplicating = async (
   );
   const calculateHash = createHasher(ignoredProperties);
   const cache = new ObliviousSet(deduplicationWindowInSeconds * 1e3);
+  logger.info("Build up the cache from already published messages");
+  await buildUpCache(logger, cache, cacheReader, cacheRebuildConfig);
+  logger.info("Handle new messages from now on");
   /* eslint-disable no-await-in-loop */
   for (;;) {
     const message = await consumer.receive();
