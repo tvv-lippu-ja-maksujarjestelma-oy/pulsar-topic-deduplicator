@@ -1,7 +1,8 @@
-import pino from "pino";
+import type pino from "pino";
 import type Pulsar from "pulsar-client";
 import { getConfig } from "./config";
 import { keepDeduplicating } from "./deduplication";
+import { createLogger } from "./gcpLogging";
 import createHealthCheckServer from "./healthCheck";
 import {
   createPulsarClient,
@@ -107,17 +108,7 @@ const exitGracefully = async (
   /* eslint-enable @typescript-eslint/no-floating-promises */
   const serviceName = "pulsar-topic-deduplicator";
   try {
-    const logger = pino(
-      {
-        name: serviceName,
-        timestamp: pino.stdTimeFunctions.isoTime,
-        redact: { paths: ["pid"], remove: true },
-        // As logger is started before config is created, read the level from
-        // env.
-        level: process.env["PINO_LOG_LEVEL"] ?? "info",
-      },
-      pino.destination({ sync: true }),
-    );
+    const logger = createLogger({ name: serviceName });
 
     let setHealthOk: (isOk: boolean) => void;
     let closeHealthCheckServer: () => Promise<void>;
