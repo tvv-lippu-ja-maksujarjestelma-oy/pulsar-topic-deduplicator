@@ -87,6 +87,11 @@ export const keepDeduplicating = async (
       // In case of an error, exit via the listener on unhandledRejection.
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       sendAndAck(producer, consumer, producerMessage, message);
+    } else {
+      // For increased throughput, we should not await here either.
+      //
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      consumer.acknowledge(message);
     }
   }
   /* eslint-enable no-await-in-loop */
