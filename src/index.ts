@@ -156,10 +156,41 @@ const exitGracefully = async (
       client = createPulsarClient(config.pulsar);
       logger.info("Create Pulsar producer");
       producer = await createPulsarProducer(client, config.pulsar);
+      logger.debug(
+        {
+          topic: config.pulsar.producerConfig.topic,
+          blockIfQueueFull: config.pulsar.producerConfig.blockIfQueueFull,
+          compressionType: config.pulsar.producerConfig.compressionType,
+          producerName: producer.getProducerName(),
+          connected: producer.isConnected(),
+        },
+        "Created Pulsar producer",
+      );
       logger.info("Create Pulsar cache-filling reader");
       cacheReader = await createPulsarCacheReader(client, config.pulsar);
+      logger.debug(
+        {
+          topic: config.pulsar.cacheReaderConfig.topic,
+          readerName: config.pulsar.cacheReaderConfig.readerName,
+          startMessageId:
+            config.pulsar.cacheReaderConfig.startMessageId.toString(),
+          connected: cacheReader.isConnected(),
+        },
+        "Created Pulsar cache reader",
+      );
       logger.info("Create Pulsar consumer");
       consumer = await createPulsarConsumer(client, config.pulsar);
+      logger.debug(
+        {
+          topicsPattern: config.pulsar.consumerConfig.topicsPattern,
+          subscription: config.pulsar.consumerConfig.subscription,
+          subscriptionType: config.pulsar.consumerConfig.subscriptionType,
+          subscriptionInitialPosition:
+            config.pulsar.consumerConfig.subscriptionInitialPosition,
+          connected: consumer.isConnected(),
+        },
+        "Created Pulsar consumer",
+      );
       logger.info("Set health check status to OK");
       setHealthOk(true);
       logger.info("Keep receiving, deduplicating and sending messages");
