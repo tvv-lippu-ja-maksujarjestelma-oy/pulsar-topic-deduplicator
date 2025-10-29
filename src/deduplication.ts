@@ -38,13 +38,24 @@ export const createHasher = (
 };
 
 export const sendAndAck = async (
+  logger: pino.Logger,
   producer: Pulsar.Producer,
   consumer: Pulsar.Consumer,
   producerMessage: Pulsar.ProducerMessage,
   consumerMessage: Pulsar.Message,
+  onSuccess: () => void,
 ) => {
   await producer.send(producerMessage);
   await consumer.acknowledge(consumerMessage);
+  onSuccess();
+  logger.debug(
+    {
+      sourceTopic: consumerMessage.getTopicName(),
+      destTopic: producer.getTopic(),
+      payloadBytes: producerMessage.data.length,
+    },
+    "Published message to Pulsar producer topic",
+  );
 };
 
 export const keepDeduplicating = async (
@@ -64,9 +75,35 @@ export const keepDeduplicating = async (
   logger.info("Build up the cache from already published messages");
   await buildUpCache(logger, cache, cacheReader, cacheRebuildConfig);
   logger.info("Handle new messages from now on");
+  const logIntervalInSeconds = 60;
+  const counters = { nRecentForwarded: 0, nRecentDropped: 0 };
+  setInterval(() => {
+    logger.info(
+      {
+        nRecentForwarded: counters.nRecentForwarded,
+        nRecentDropped: counters.nRecentDropped,
+      },
+      "messages forwarded to destination Pulsar topic",
+    );
+    counters.nRecentForwarded = 0;
+    counters.nRecentDropped = 0;
+  }, 1_000 * logIntervalInSeconds);
+  const incrementForwarded = () => {
+    counters.nRecentForwarded += 1;
+  };
   /* eslint-disable no-await-in-loop */
   for (;;) {
     const message = await consumer.receive();
+    logger.debug(
+      {
+        topic: message.getTopicName(),
+        messageId: message.getMessageId().toString(),
+        redeliveryCount: message.getRedeliveryCount(),
+        payloadBytes: message.getData().length,
+        eventTimestamp: message.getEventTimestamp(),
+      },
+      "Received message from Pulsar consumer",
+    );
     const hash = calculateHash(message);
     const digest = hash.toString("hex");
     if (!cache.has(digest)) {
@@ -86,12 +123,27 @@ export const keepDeduplicating = async (
       //
       // In case of an error, exit via the listener on unhandledRejection.
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      sendAndAck(producer, consumer, producerMessage, message);
+      sendAndAck(
+        logger,
+        producer,
+        consumer,
+        producerMessage,
+        message,
+        incrementForwarded,
+      );
     } else {
       // For increased throughput, we should not await here either.
       //
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       consumer.acknowledge(message);
+      counters.nRecentDropped += 1;
+      logger.debug(
+        {
+          topic: message.getTopicName(),
+          messageId: message.getMessageId().toString(),
+        },
+        "Acknowledged duplicate message; not forwarding",
+      );
     }
   }
   /* eslint-enable no-await-in-loop */
