@@ -69,14 +69,58 @@ export const buildUpCache = async (
   { cacheWindowInSeconds }: CacheRebuildConfig,
 ): Promise<void> => {
   const now = Date.now();
-  const startingTime = now - 1_000 * cacheWindowInSeconds;
-  await cacheReader.seekTimestamp(startingTime);
-  /* eslint-disable no-await-in-loop */
-  while (cacheReader.hasNext()) {
-    const oldMessage = await cacheReader.readNext();
-    const digests = getDigests(logger, oldMessage);
-    digests.forEach((digest) => cache.add(digest));
+  const start = now - cacheWindowInSeconds * 1000;
+
+  await cacheReader.seekTimestamp(start);
+
+  // Before building up the deduplication cache, the cache reader is moved to the position corresponding to the start of the desired time window.
+  // The following section then reads messages from the Pulsar topic starting from that position until the cache window is filled or there are no more messages.
+  // Each message's relevant deduplication digests are extracted and added to the cache.
+  const cutoffTs = now;
+
+  const READ_TIMEOUT_MS = 1000; // 1s
+  const MAX_CONSECUTIVE_TIMEOUTS = 3; // ~3s of emptiness → stop
+
+  let consecutiveTimeouts = 0;
+
+  try {
+    /* eslint-disable no-await-in-loop, no-constant-condition */
+    while (true) {
+      try {
+        const msg = await cacheReader.readNext(READ_TIMEOUT_MS);
+
+        const publishTs = msg.getPublishTimestamp?.() ?? 0;
+        const eventTs = msg.getEventTimestamp?.() ?? 0;
+        const ts = publishTs > 0 ? publishTs : eventTs;
+        if (ts > cutoffTs) {
+          break;
+        }
+
+        const digests = getDigests(logger, msg);
+        digests.forEach((d) => cache.add(d));
+
+        consecutiveTimeouts = 0;
+      } catch (e) {
+        const err = e as {
+          name?: string;
+          code?: unknown;
+          message?: unknown;
+        };
+        const isTimeout =
+          err?.name === "TimeoutError" ||
+          err?.code === ("Timeout" as unknown) ||
+          (typeof err?.message === "string" && /timeout/i.test(err.message));
+
+        if (!isTimeout) throw e;
+
+        consecutiveTimeouts += 1;
+        if (consecutiveTimeouts >= MAX_CONSECUTIVE_TIMEOUTS) {
+          break;
+        }
+      }
+    }
+    /* eslint-enable no-await-in-loop, no-constant-condition */
+  } finally {
+    await cacheReader.close();
   }
-  /* eslint-enable no-await-in-loop */
-  await cacheReader.close();
 };
