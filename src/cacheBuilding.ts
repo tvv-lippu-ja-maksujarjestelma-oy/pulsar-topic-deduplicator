@@ -82,6 +82,11 @@ export const buildUpCache = async (
   const MAX_CONSECUTIVE_TIMEOUTS = 3; // ~3s of emptiness → stop
 
   let consecutiveTimeouts = 0;
+  const MAX_NON_TIMEOUT_RETRIES = 5;
+  const MAX_WARMUP_MS = 60_000; // 60s budget for warm-up retries
+  const BASE_BACKOFF_MS = 500;
+  let nonTimeoutRetries = 0;
+  const warmupStart = now;
 
   try {
     /* eslint-disable no-await-in-loop, no-constant-condition */
@@ -111,7 +116,33 @@ export const buildUpCache = async (
           err?.code === ("Timeout" as unknown) ||
           (typeof err?.message === "string" && /timeout/i.test(err.message));
 
-        if (!isTimeout) throw e;
+        if (!isTimeout) {
+          const backoffMs = Math.min(
+            BASE_BACKOFF_MS * 2 ** nonTimeoutRetries,
+            5_000,
+          );
+          logger.warn(
+            { err, attempt: nonTimeoutRetries + 1, backoffMs },
+            "Cache warm-up read error; retrying",
+          );
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, backoffMs);
+          });
+          nonTimeoutRetries += 1;
+          const elapsedMs = Date.now() - warmupStart;
+          if (
+            nonTimeoutRetries >= MAX_NON_TIMEOUT_RETRIES ||
+            elapsedMs >= MAX_WARMUP_MS
+          ) {
+            logger.error(
+              { err, attempts: nonTimeoutRetries, elapsedMs },
+              "Cache warm-up aborted after repeated errors; proceeding without warm-up",
+            );
+            break;
+          }
+          // eslint-disable-next-line no-continue
+          continue;
+        }
 
         consecutiveTimeouts += 1;
         if (consecutiveTimeouts >= MAX_CONSECUTIVE_TIMEOUTS) {
