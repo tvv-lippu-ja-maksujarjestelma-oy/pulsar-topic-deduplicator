@@ -152,6 +152,13 @@ export const buildUpCache = async (
     }
     /* eslint-enable no-await-in-loop, no-constant-condition */
   } finally {
-    await cacheReader.close();
+    try {
+      await cacheReader.close();
+    } catch (err) {
+      logger.warn(
+        { err },
+        "Failed to close Pulsar cache reader after warm-up; continuing",
+      );
+    }
   }
 };
