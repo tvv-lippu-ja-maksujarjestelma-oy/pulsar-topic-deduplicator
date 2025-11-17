@@ -28,9 +28,9 @@
   },
   "homepage": "https://github.com/tvv-lippu-ja-maksujarjestelma-oy/pulsar-topic-deduplicator#readme",
   "devDependencies": {
-    "@tsconfig/strictest": "^2.0.6",
+    "@tsconfig/strictest": "^2.0.8",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.7.2",
+    "@types/node": "^24.10.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^8.57.0",
@@ -49,7 +49,7 @@
   "dependencies": {
     "oblivious-set": "^1.4.0",
     "pino": "^8.16.2",
-    "pulsar-client": "^1.14.0",
+    "pulsar-client": "^1.15.0",
     "safe-stable-stringify": "^2.5.0"
   },
   "jest": {
