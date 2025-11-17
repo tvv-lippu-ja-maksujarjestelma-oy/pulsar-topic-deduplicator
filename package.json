@@ -47,7 +47,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "oblivious-set": "^1.4.0",
+    "oblivious-set": "^2.0.0",
     "pino": "^8.16.2",
     "pulsar-client": "^1.15.0",
     "safe-stable-stringify": "^2.5.0"
