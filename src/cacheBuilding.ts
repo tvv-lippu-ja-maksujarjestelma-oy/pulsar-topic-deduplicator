@@ -66,7 +66,7 @@ export const buildUpCache = async (
   logger: pino.Logger,
   cache: ObliviousSet,
   cacheReader: Pulsar.Reader,
-  { cacheWindowInSeconds }: CacheRebuildConfig,
+  { cacheWindowInSeconds, disableSeek }: CacheRebuildConfig,
 ): Promise<void> => {
   if (cacheWindowInSeconds <= 0) {
     logger.info(
@@ -95,7 +95,7 @@ export const buildUpCache = async (
 
   try {
     // Resilient seek with bounded retries and time budget
-    {
+    if (!disableSeek) {
       let seekAttempts = 0;
       // eslint-disable-next-line no-constant-condition
       while (true) {
@@ -130,6 +130,11 @@ export const buildUpCache = async (
           }
         }
       }
+    } else {
+      logger.info(
+        { start, cacheWindowInSeconds },
+        "Skipping seek during cache warm-up; scanning from reader start",
+      );
     }
 
     /* eslint-disable no-await-in-loop, no-constant-condition */
