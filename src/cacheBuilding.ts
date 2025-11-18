@@ -68,10 +68,15 @@ export const buildUpCache = async (
   cacheReader: Pulsar.Reader,
   { cacheWindowInSeconds }: CacheRebuildConfig,
 ): Promise<void> => {
+  if (cacheWindowInSeconds <= 0) {
+    logger.info(
+      { cacheWindowInSeconds },
+      "Skipping cache warm-up because cacheWindowInSeconds <= 0",
+    );
+    return;
+  }
   const now = Date.now();
   const start = now - cacheWindowInSeconds * 1000;
-
-  await cacheReader.seekTimestamp(start);
 
   // Before building up the deduplication cache, the cache reader is moved to the position corresponding to the start of the desired time window.
   // The following section then reads messages from the Pulsar topic starting from that position until the cache window is filled or there are no more messages.
@@ -89,6 +94,44 @@ export const buildUpCache = async (
   const warmupStart = now;
 
   try {
+    // Resilient seek with bounded retries and time budget
+    {
+      let seekAttempts = 0;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          await cacheReader.seekTimestamp(start);
+          break;
+        } catch (err) {
+          const backoffMs = Math.min(
+            BASE_BACKOFF_MS * 2 ** seekAttempts,
+            5_000,
+          );
+          logger.warn(
+            { err, attempt: seekAttempts + 1, backoffMs },
+            "Cache warm-up seek error; retrying",
+          );
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, backoffMs);
+          });
+          seekAttempts += 1;
+          const elapsedMs = Date.now() - warmupStart;
+          if (
+            seekAttempts >= MAX_NON_TIMEOUT_RETRIES ||
+            elapsedMs >= MAX_WARMUP_MS
+          ) {
+            logger.error(
+              { err, attempts: seekAttempts, elapsedMs },
+              "Cache warm-up seek aborted after repeated errors; proceeding without warm-up",
+            );
+            return;
+          }
+        }
+      }
+    }
+
     /* eslint-disable no-await-in-loop, no-constant-condition */
     while (true) {
       try {

@@ -82,6 +82,20 @@ const getOptionalNonNegativeFloat = (
   return float;
 };
 
+const getOptionalNonNegativeInteger = (
+  envVariable: string,
+): number | undefined => {
+  const str = getOptional(envVariable);
+  if (str === undefined) return undefined;
+  const int = Number.parseInt(str, 10);
+  if (!Number.isFinite(int) || int < 0 || !/^\d+$/.test(str)) {
+    throw new Error(
+      `${envVariable} must be a non-negative integer if given. Instead, ${str} was given.`,
+    );
+  }
+  return int;
+};
+
 const getCacheRebuildConfig = () => {
   const cacheWindowInSeconds =
     getOptionalNonNegativeFloat("CACHE_WINDOW_IN_SECONDS") ?? 172800;
@@ -210,6 +224,9 @@ const getPulsarConfig = (logger: pino.Logger): PulsarConfig => {
   const cacheReaderName = getRequired("PULSAR_CACHE_READER_NAME");
   // seek() will be called to find the right position.
   const cacheReaderStartMessageId = MessageId.earliest();
+  const cacheReaderReceiverQueueSize =
+    getOptionalNonNegativeInteger("PULSAR_CACHE_READER_RECEIVER_QUEUE_SIZE") ??
+    10;
   const consumerTopicsPattern = getRequired("PULSAR_CONSUMER_TOPICS_PATTERN");
   const subscription = getRequired("PULSAR_SUBSCRIPTION");
   const subscriptionType = "Exclusive";
@@ -229,6 +246,7 @@ const getPulsarConfig = (logger: pino.Logger): PulsarConfig => {
       topic: producerTopic,
       readerName: cacheReaderName,
       startMessageId: cacheReaderStartMessageId,
+      receiverQueueSize: cacheReaderReceiverQueueSize,
     },
     consumerConfig: {
       topicsPattern: consumerTopicsPattern,
