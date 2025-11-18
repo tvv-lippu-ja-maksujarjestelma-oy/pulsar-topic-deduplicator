@@ -3,6 +3,7 @@ import Pulsar, { MessageId } from "pulsar-client";
 
 export interface CacheRebuildConfig {
   cacheWindowInSeconds: number;
+  disableSeek: boolean;
 }
 
 export interface DeduplicationConfig {
@@ -99,8 +100,13 @@ const getOptionalNonNegativeInteger = (
 const getCacheRebuildConfig = () => {
   const cacheWindowInSeconds =
     getOptionalNonNegativeFloat("CACHE_WINDOW_IN_SECONDS") ?? 172800;
+  const disableSeek = getOptionalBooleanWithDefault(
+    "CACHE_REBUILD_DISABLE_SEEK",
+    false,
+  );
   return {
     cacheWindowInSeconds,
+    disableSeek,
   };
 };
 
