@@ -249,7 +249,7 @@ describe("calculateHash", () => {
 describe("cache", () => {
   const generateRandomData = (nBits: number): Uint8Array => {
     const byteArray = new Uint8Array(nBits);
-    return crypto.getRandomValues(byteArray);
+    return crypto.randomFillSync(byteArray);
   };
 
   test("cache compares Buffer identity", () => {
