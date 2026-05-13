@@ -6,6 +6,8 @@ import stringify from "safe-stable-stringify";
 import type { CacheRebuildConfig, DeduplicationConfig } from "./config";
 import { buildUpCache } from "./cacheBuilding";
 
+const PULSAR_RECEIVE_TIMEOUT_MS = 300_000;
+
 export const createHasher = (
   ignoredProperties: string[],
 ): ((message: Pulsar.Message) => Buffer) => {
@@ -93,57 +95,67 @@ export const keepDeduplicating = async (
   };
   /* eslint-disable no-await-in-loop */
   for (;;) {
-    const message = await consumer.receive();
-    logger.debug(
-      {
-        topic: message.getTopicName(),
-        messageId: message.getMessageId().toString(),
-        redeliveryCount: message.getRedeliveryCount(),
-        payloadBytes: message.getData().length,
-        eventTimestamp: message.getEventTimestamp(),
-      },
-      "Received message from Pulsar consumer",
-    );
-    const hash = calculateHash(message);
-    const digest = hash.toString("hex");
-    if (!cache.has(digest)) {
-      cache.add(digest);
-      const producerMessage = {
-        data: message.getData(),
-        properties: {
-          ...message.getProperties(),
-          ...{ origin: JSON.stringify([digest]) },
-        },
-        eventTimestamp: message.getEventTimestamp(),
-      };
-      // To utilize concurrency and to not limit throughput unnecessarily, we
-      // should _not_ await sendAndAck. Instead, Promises are handled in order
-      // by Node.js. Therefore we can receive the next Pulsar message right
-      // away.
-      //
-      // In case of an error, exit via the listener on unhandledRejection.
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      sendAndAck(
-        logger,
-        producer,
-        consumer,
-        producerMessage,
-        message,
-        incrementForwarded,
+    let message: Pulsar.Message | undefined;
+    try {
+      message = await consumer.receive(PULSAR_RECEIVE_TIMEOUT_MS);
+    } catch (err) {
+      logger.warn(
+        { err, receiveTimeoutMs: PULSAR_RECEIVE_TIMEOUT_MS },
+        "Pulsar consumer receive failed",
       );
-    } else {
-      // For increased throughput, we should not await here either.
-      //
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      consumer.acknowledge(message);
-      counters.nRecentDropped += 1;
+    }
+    if (message != null) {
       logger.debug(
         {
           topic: message.getTopicName(),
           messageId: message.getMessageId().toString(),
+          redeliveryCount: message.getRedeliveryCount(),
+          payloadBytes: message.getData().length,
+          eventTimestamp: message.getEventTimestamp(),
         },
-        "Acknowledged duplicate message; not forwarding",
+        "Received message from Pulsar consumer",
       );
+      const hash = calculateHash(message);
+      const digest = hash.toString("hex");
+      if (!cache.has(digest)) {
+        cache.add(digest);
+        const producerMessage = {
+          data: message.getData(),
+          properties: {
+            ...message.getProperties(),
+            ...{ origin: JSON.stringify([digest]) },
+          },
+          eventTimestamp: message.getEventTimestamp(),
+        };
+        // To utilize concurrency and to not limit throughput unnecessarily, we
+        // should _not_ await sendAndAck. Instead, Promises are handled in order
+        // by Node.js. Therefore we can receive the next Pulsar message right
+        // away.
+        //
+        // In case of an error, exit via the listener on unhandledRejection.
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        sendAndAck(
+          logger,
+          producer,
+          consumer,
+          producerMessage,
+          message,
+          incrementForwarded,
+        );
+      } else {
+        // For increased throughput, we should not await here either.
+        //
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        consumer.acknowledge(message);
+        counters.nRecentDropped += 1;
+        logger.debug(
+          {
+            topic: message.getTopicName(),
+            messageId: message.getMessageId().toString(),
+          },
+          "Acknowledged duplicate message; not forwarding",
+        );
+      }
     }
   }
   /* eslint-enable no-await-in-loop */
