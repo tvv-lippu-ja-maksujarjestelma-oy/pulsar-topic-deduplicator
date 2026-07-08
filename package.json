@@ -50,7 +50,7 @@
   "dependencies": {
     "oblivious-set": "^2.0.0",
     "pino": "^8.16.2",
-    "pulsar-client": "^1.17.0",
+    "pulsar-client": "^1.18.0",
     "safe-stable-stringify": "^2.5.0"
   },
   "jest": {
