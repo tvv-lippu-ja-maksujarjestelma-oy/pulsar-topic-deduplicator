@@ -45,7 +45,7 @@
     "jest-util": "^30.5.0",
     "prettier": "^3.8.3",
     "ts-jest": "^29.4.0",
-    "typescript": "^5.9.3"
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "oblivious-set": "^2.0.0",
