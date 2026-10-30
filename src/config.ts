@@ -116,12 +116,10 @@ const getDeduplicationIgnoredProperties = (): string[] => {
   const ignoredProperties: string[] = JSON.parse(
     getOptional(envVariable) ?? "[]",
   );
-  if (
-    !(
-      Array.isArray(ignoredProperties) &&
-      ignoredProperties.every((s: string) => typeof s === "string")
-    )
-  ) {
+  if (!(
+    Array.isArray(ignoredProperties) &&
+    ignoredProperties.every((s: string) => typeof s === "string")
+  )) {
     throw new Error(
       `${envVariable} must be a stringified JSON array holding only strings.`,
     );

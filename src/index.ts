@@ -97,7 +97,7 @@ const exitGracefully = async (
     );
   }
   logger.info("Exit process");
-  process.exit(); // eslint-disable-line no-process-exit
+  process.exit();
 };
 
 /**
@@ -206,8 +206,7 @@ const exitGracefully = async (
       exitHandler(1, transformUnknownToError(err));
     }
   } catch (loggerErr) {
-    // eslint-disable-next-line no-console
     console.error("Failed to start logging:", loggerErr);
-    process.exit(1); // eslint-disable-line no-process-exit
+    process.exit(1);
   }
 })();
