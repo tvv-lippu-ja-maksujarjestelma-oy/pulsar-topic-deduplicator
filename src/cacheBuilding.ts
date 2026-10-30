@@ -27,12 +27,10 @@ export const getDigests = (
     try {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       digests = JSON.parse(origin);
-      if (
-        !(
-          Array.isArray(digests) &&
-          digests.every((s: string) => typeof s === "string" && s !== "")
-        )
-      ) {
+      if (!(
+        Array.isArray(digests) &&
+        digests.every((s: string) => typeof s === "string" && s !== "")
+      )) {
         logger.warn(
           {
             messageId: message.getMessageId(),
@@ -97,10 +95,8 @@ export const buildUpCache = async (
     // Resilient seek with bounded retries and time budget
     if (!disableSeek) {
       let seekAttempts = 0;
-      // eslint-disable-next-line no-constant-condition
       while (true) {
         try {
-          // eslint-disable-next-line no-await-in-loop
           await cacheReader.seekTimestamp(start);
           break;
         } catch (err) {
@@ -112,7 +108,6 @@ export const buildUpCache = async (
             { err, attempt: seekAttempts + 1, backoffMs },
             "Cache warm-up seek error; retrying",
           );
-          // eslint-disable-next-line no-await-in-loop
           await new Promise<void>((resolve) => {
             setTimeout(resolve, backoffMs);
           });
@@ -137,7 +132,6 @@ export const buildUpCache = async (
       );
     }
 
-    /* eslint-disable no-await-in-loop, no-constant-condition */
     while (true) {
       try {
         const msg = await cacheReader.readNext(READ_TIMEOUT_MS);
@@ -188,7 +182,6 @@ export const buildUpCache = async (
             );
             break;
           }
-          // eslint-disable-next-line no-continue
           continue;
         }
 
@@ -198,7 +191,6 @@ export const buildUpCache = async (
         }
       }
     }
-    /* eslint-enable no-await-in-loop, no-constant-condition */
   } finally {
     try {
       await cacheReader.close();

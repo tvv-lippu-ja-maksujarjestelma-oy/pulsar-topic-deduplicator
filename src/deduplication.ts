@@ -93,7 +93,6 @@ export const keepDeduplicating = async (
   const incrementForwarded = () => {
     counters.nRecentForwarded += 1;
   };
-  /* eslint-disable no-await-in-loop */
   for (;;) {
     let message: Pulsar.Message | undefined;
     try {
@@ -158,5 +157,4 @@ export const keepDeduplicating = async (
       }
     }
   }
-  /* eslint-enable no-await-in-loop */
 };
