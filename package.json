@@ -51,7 +51,7 @@
     "oblivious-set": "^2.0.0",
     "pino": "^10.4.0",
     "pulsar-client": "^1.18.0",
-    "safe-stable-stringify": "^3.0.0"
+    "safe-stable-stringify": "^3.0.1"
   },
   "jest": {
     "preset": "ts-jest",
